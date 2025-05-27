@@ -1,6 +1,7 @@
 FROM node:18 AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
+RUN npm install @mui/material @emotion/react @emotion/styled @mui/icons-material recharts
 RUN npm install
 COPY . .
 RUN npm run build

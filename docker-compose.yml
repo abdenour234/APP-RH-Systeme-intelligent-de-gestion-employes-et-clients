@@ -10,6 +10,8 @@ services:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./backend:/app/backend
     networks:
       - app-network
 
@@ -19,6 +21,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+    volumes:
+      - ./frontend:/app/frontend
     depends_on:
       - backend
     networks:
