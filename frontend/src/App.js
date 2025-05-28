@@ -11,10 +11,39 @@ import Projects from './pages/Projects';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#4F8DFD',
     },
     secondary: {
-      main: '#dc004e',
+      main: '#00C49F',
+    },
+    background: {
+      default: '#fafdff',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 800,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 8,
+        },
+      },
     },
   },
 });

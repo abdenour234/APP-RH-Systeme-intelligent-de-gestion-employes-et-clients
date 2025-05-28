@@ -7,9 +7,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=${DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://aws-0-eu-west-3.pooler.supabase.com:6543/postgres?ssl=true&sslmode=require
+      - SPRING_DATASOURCE_USERNAME=postgres.gcftmbhqlkqcamiwjoky
+      - SPRING_DATASOURCE_PASSWORD=Oujda@oujda
+    
     volumes:
       - ./backend:/app/backend
     networks:
