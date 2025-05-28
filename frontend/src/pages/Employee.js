@@ -41,6 +41,8 @@ import BusinessIcon from '@mui/icons-material/Business';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AddIcon from '@mui/icons-material/Add';
+import AddEmployeeForm from '../components/AddEmployeeForm';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
@@ -105,6 +107,7 @@ const Employee = () => {
   const [selectedInfo, setSelectedInfo] = useState(null);
   const [employeesExpanded, setEmployeesExpanded] = useState(false);
   const [departmentsExpanded, setDepartmentsExpanded] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Enhanced mock data with more details
   const employees = [
@@ -403,18 +406,31 @@ const Employee = () => {
       background: 'linear-gradient(120deg, #fafdff 70%, #e3f0ff 100%)', 
       minHeight: '100vh' 
     }}>
-      <Typography 
-        variant={isMobile ? "h5" : "h4"} 
-        sx={{ 
-          mb: 3, 
-          fontWeight: 800, 
-          color: ACCENT, 
-          textAlign: 'center',
-          textShadow: '0 2px 4px rgba(79,141,253,0.1)'
-        }}
-      >
-        Espace Employé
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography 
+          variant={isMobile ? "h5" : "h4"} 
+          sx={{ 
+            fontWeight: 800, 
+            color: ACCENT, 
+            textShadow: '0 2px 4px rgba(79,141,253,0.1)'
+          }}
+        >
+          Espace Employé
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setShowAddForm(true)}
+          sx={{
+            background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
+            '&:hover': {
+              background: `linear-gradient(135deg, ${ACCENT} 20%, ${ACCENT2} 120%)`,
+            },
+          }}
+        >
+          Ajouter un employé
+        </Button>
+      </Box>
 
       {/* Filter Section */}
       <FilterCard>
@@ -1168,6 +1184,11 @@ const Employee = () => {
           )}
         </DialogContent>
       </InfoDialog>
+
+      <AddEmployeeForm 
+        open={showAddForm} 
+        onClose={() => setShowAddForm(false)} 
+      />
     </Box>
   );
 };
