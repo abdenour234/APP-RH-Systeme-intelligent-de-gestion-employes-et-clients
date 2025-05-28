@@ -348,7 +348,7 @@ const AddEmployeeForm = ({ open, onClose }) => {
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
-                  <MenuItem value="O">Other</MenuItem>
+                  
                 </Select>
                 {errors.sexe && <Typography variant="caption" color="error">{errors.sexe}</Typography>}
               </FormControl>
