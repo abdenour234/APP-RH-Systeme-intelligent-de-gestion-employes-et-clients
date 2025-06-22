@@ -11,7 +11,7 @@ services:
       - ./backend:/app
       - /root/.m2  # Cache Maven dependencies
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://aws-0-eu-west-3.pooler.supabase.com:6543/postgres?ssl=true&sslmode=require
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://13.39.246.141:6543/postgres?ssl=true&sslmode=require&prepareThreshold=0
       - SPRING_DATASOURCE_USERNAME=postgres.gcftmbhqlkqcamiwjoky
       - SPRING_DATASOURCE_PASSWORD=Oujda@oujda
     networks:

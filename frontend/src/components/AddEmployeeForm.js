@@ -52,73 +52,133 @@ const steps = ['Employee Information', 'Department Details', 'Contract Terms'];
 const AddEmployeeForm = ({ open, onClose }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    hire_date: new Date().toISOString().split('T')[0],
-    job_title: '',
-    manager_id: '',
-    status: 'active',
+    hireDate: new Date().toISOString().split('T')[0],
+    jobTitle: '',
+    managerId: '',
+    status: 'Active',
     age: '',
     sexe: '',
-    department_id: '',
+    departmentId: '',
     skipDepartment: false,
-    contract_type: 'CDI',
-    work_hours: '35',
+    contractType: 'CDI',
+    workHours: '35',
     salary: '',
-    remote_available: true,
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
+    remoteAvailable: true,
+    contractStartDate: new Date().toISOString().split('T')[0],
+    contractEndDate: '',
     benefits: '',
-    contract_status: 'active'
+    contractStatus: 'Active'
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', or null
-  const [managers, setManagers] = useState([
-    { id: 'mgr001', name: 'Alexandre Martin' },
-    { id: 'mgr002', name: 'Sophie Dubois' },
-    { id: 'mgr003', name: 'Thomas Bernard' }
-  ]);
-  
-  const [departments] = useState([
-    { id: '1', name: 'IT Department' },
-    { id: '2', name: 'Human Resources' },
-    { id: '3', name: 'Finance' },
-    { id: '4', name: 'Marketing' },
-    { id: '5', name: 'Operations' }
-  ]);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [managers, setManagers] = useState([]);
+
+  // Fetch departments with managers from the API
+  useEffect(() => {
+    if (open) {
+      const fetchDepartments = async () => {
+        try {
+          const response = await fetch('http://localhost:8080/api/departments/with-managers', {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!response.ok) throw new Error('Failed to fetch departments');
+          const data = await response.json();
+          setDepartments(data);
+          // Extract unique managers from departments
+          const uniqueManagers = data
+            .filter(dept => dept.managerFullName !== 'N/A' && dept.managerId)
+            .map(dept => ({
+              id: dept.managerId, // Use managerId from DTO
+              name: dept.managerFullName,
+              departmentId: dept.departmentId
+            }));
+          setManagers(uniqueManagers);
+        } catch (error) {
+          console.error('Error fetching departments:', error);
+          setErrors(prev => ({ ...prev, fetch: 'Failed to load department data' }));
+        }
+      };
+      fetchDepartments();
+    }
+  }, [open]);
 
   // Reset form when opening
   useEffect(() => {
     if (open) {
       setActiveStep(0);
       setFormData({
-        first_name: '',
-        last_name: '',
+        firstName: '',
+        lastName: '',
         email: '',
-        hire_date: new Date().toISOString().split('T')[0],
-        job_title: '',
-        manager_id: '',
-        status: 'active',
+        hireDate: new Date().toISOString().split('T')[0],
+        jobTitle: '',
+        managerId: '',
+        status: 'Active',
         age: '',
         sexe: '',
-        department_id: '',
+        departmentId: '',
         skipDepartment: false,
-        contract_type: 'CDI',
-        work_hours: '35',
+        contractType: 'CDI',
+        workHours: '35',
         salary: '',
-        remote_available: true,
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: '',
+        remoteAvailable: true,
+        contractStartDate: new Date().toISOString().split('T')[0],
+        contractEndDate: '',
         benefits: '',
-        contract_status: 'active'
+        contractStatus: 'Active'
       });
       setErrors({});
       setSubmitStatus(null);
     }
   }, [open]);
+
+  // Handle manager selection and update department
+  const handleManagerChange = (e) => {
+    const selectedManagerId = e.target.value;
+    const selectedManager = managers.find(m => m.id === selectedManagerId);
+    setFormData(prev => ({
+      ...prev,
+      managerId: selectedManagerId,
+      departmentId: selectedManager ? selectedManager.departmentId : '',
+      skipDepartment: false
+    }));
+    if (errors.managerId || errors.departmentId) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.managerId;
+        delete newErrors.departmentId;
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle department selection and update manager
+  const handleDepartmentChange = (e) => {
+    const selectedDepartmentId = e.target.value;
+    const selectedDepartment = departments.find(d => d.departmentId === selectedDepartmentId);
+    setFormData(prev => ({
+      ...prev,
+      departmentId: selectedDepartmentId,
+      managerId: selectedDepartment && selectedDepartment.managerId ? selectedDepartment.managerId : '',
+      skipDepartment: false
+    }));
+    if (errors.departmentId || errors.managerId) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.departmentId;
+        delete newErrors.managerId;
+        return newErrors;
+      });
+    }
+  };
 
   const handleNext = () => {
     if (validateStep()) {
@@ -139,15 +199,15 @@ const AddEmployeeForm = ({ open, onClose }) => {
     
     switch (activeStep) {
       case 0:
-        if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
-        if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
+        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+        if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
         if (!formData.email.trim()) {
           newErrors.email = 'Email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
           newErrors.email = 'Invalid email format';
         }
-        if (!formData.hire_date) newErrors.hire_date = 'Hire date is required';
-        if (!formData.job_title.trim()) newErrors.job_title = 'Job title is required';
+        if (!formData.hireDate) newErrors.hireDate = 'Hire date is required';
+        if (!formData.jobTitle.trim()) newErrors.jobTitle = 'Job title is required';
         if (!formData.age) {
           newErrors.age = 'Age is required';
         } else if (formData.age < 18 || formData.age > 70) {
@@ -157,20 +217,20 @@ const AddEmployeeForm = ({ open, onClose }) => {
         break;
         
       case 1:
-        if (!formData.skipDepartment && !formData.department_id) {
-          newErrors.department_id = 'Please select a department or skip this step';
+        if (!formData.skipDepartment && !formData.departmentId) {
+          newErrors.departmentId = 'Please select a department or skip this step';
         }
         break;
         
       case 2:
-        if (!formData.contract_type) newErrors.contract_type = 'Contract type is required';
-        if (!formData.work_hours) newErrors.work_hours = 'Work hours are required';
+        if (!formData.contractType) newErrors.contractType = 'Contract type is required';
+        if (!formData.workHours) newErrors.workHours = 'Work hours are required';
         if (!formData.salary) {
           newErrors.salary = 'Salary is required';
         } else if (formData.salary < 1000 || formData.salary > 100000) {
           newErrors.salary = 'Salary must be between €1000 and €100,000';
         }
-        if (!formData.start_date) newErrors.start_date = 'Start date is required';
+        if (!formData.contractStartDate) newErrors.contractStartDate = 'Start date is required';
         break;
     }
     
@@ -183,19 +243,52 @@ const AddEmployeeForm = ({ open, onClose }) => {
     setSubmitStatus(null);
     
     try {
-      // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would make actual API calls here
+      const requestData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        hireDate: formData.hireDate,
+        jobTitle: formData.jobTitle,
+        managerId: formData.managerId ? parseInt(formData.managerId) : null,
+        status: formData.status,
+        age: parseInt(formData.age),
+        sexe: formData.sexe,
+        departmentId: formData.skipDepartment ? null : parseInt(formData.departmentId),
+        contractType: formData.contractType,
+        workHours: parseInt(formData.workHours),
+        salary: parseFloat(formData.salary),
+        remoteAvailable: formData.remoteAvailable,
+        contractStartDate: formData.contractStartDate,
+        contractEndDate: formData.contractEndDate || null,
+        benefits: formData.benefits,
+        contractStatus: formData.contractStatus
+      };
+
+      console.log('Sending employee with contract data:', requestData);
+
+      const response = await fetch('http://localhost:8080/api/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Employee with contract created successfully:', data);
       setSubmitStatus('success');
       
-      // Close after success
       setTimeout(() => {
         onClose();
         setLoading(false);
       }, 1500);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error creating employee with contract:', error);
       setSubmitStatus('error');
       setLoading(false);
     }
@@ -208,7 +301,6 @@ const AddEmployeeForm = ({ open, onClose }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -231,7 +323,7 @@ const AddEmployeeForm = ({ open, onClose }) => {
                 background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`,
                 fontSize: 32
               }}>
-                {formData.first_name.charAt(0) || formData.last_name.charAt(0) || '?'}
+                {formData.firstName.charAt(0) || formData.lastName.charAt(0) || '?'}
               </Avatar>
             </Grid>
             
@@ -239,11 +331,11 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="First Name *"
-                name="first_name"
-                value={formData.first_name}
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
-                error={!!errors.first_name}
-                helperText={errors.first_name}
+                error={!!errors.firstName}
+                helperText={errors.firstName}
                 autoFocus
               />
             </Grid>
@@ -252,11 +344,11 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Last Name *"
-                name="last_name"
-                value={formData.last_name}
+                name="lastName"
+                value={formData.lastName}
                 onChange={handleChange}
-                error={!!errors.last_name}
-                helperText={errors.last_name}
+                error={!!errors.lastName}
+                helperText={errors.lastName}
               />
             </Grid>
             
@@ -277,12 +369,12 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Hire Date *"
-                name="hire_date"
+                name="hireDate"
                 type="date"
-                value={formData.hire_date}
+                value={formData.hireDate}
                 onChange={handleChange}
-                error={!!errors.hire_date}
-                helperText={errors.hire_date}
+                error={!!errors.hireDate}
+                helperText={errors.hireDate}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -291,21 +383,21 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Job Title *"
-                name="job_title"
-                value={formData.job_title}
+                name="jobTitle"
+                value={formData.jobTitle}
                 onChange={handleChange}
-                error={!!errors.job_title}
-                helperText={errors.job_title}
+                error={!!errors.jobTitle}
+                helperText={errors.jobTitle}
               />
             </Grid>
             
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.managerId}>
                 <InputLabel>Manager</InputLabel>
                 <Select
-                  name="manager_id"
-                  value={formData.manager_id}
-                  onChange={handleChange}
+                  name="managerId"
+                  value={formData.managerId}
+                  onChange={handleManagerChange}
                   label="Manager"
                   renderValue={(selected) => {
                     if (!selected) return "Not assigned";
@@ -316,10 +408,13 @@ const AddEmployeeForm = ({ open, onClose }) => {
                   <MenuItem value="">Not assigned</MenuItem>
                   {managers.map((manager) => (
                     <MenuItem key={manager.id} value={manager.id}>
-                      {manager.name}
+                      {manager.name} ({departments.find(d => d.departmentId === manager.departmentId)?.departmentName || 'N/A'})
                     </MenuItem>
                   ))}
                 </Select>
+                {errors.managerId && (
+                  <Typography variant="caption" color="error">{errors.managerId}</Typography>
+                )}
               </FormControl>
             </Grid>
             
@@ -348,7 +443,6 @@ const AddEmployeeForm = ({ open, onClose }) => {
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
-                  
                 </Select>
                 {errors.sexe && <Typography variant="caption" color="error">{errors.sexe}</Typography>}
               </FormControl>
@@ -379,34 +473,34 @@ const AddEmployeeForm = ({ open, onClose }) => {
             
             {!formData.skipDepartment && (
               <Grid item xs={12}>
-                <FormControl fullWidth error={!!errors.department_id}>
+                <FormControl fullWidth error={!!errors.departmentId}>
                   <InputLabel>Select Department</InputLabel>
                   <Select
-                    name="department_id"
-                    value={formData.department_id}
-                    onChange={handleChange}
+                    name="departmentId"
+                    value={formData.departmentId}
+                    onChange={handleDepartmentChange}
                     label="Select Department"
                   >
                     {departments.map((dept) => (
-                      <MenuItem key={dept.id} value={dept.id}>
+                      <MenuItem key={dept.departmentId} value={dept.departmentId}>
                         <Box display="flex" alignItems="center">
                           <Box 
                             width={10} 
                             height={10} 
-                            bgcolor={dept.id === '1' ? PRIMARY : 
-                                     dept.id === '2' ? SECONDARY : 
-                                     dept.id === '3' ? '#ff7043' : 
-                                     dept.id === '4' ? '#ab47bc' : '#26a69a'} 
+                            bgcolor={dept.departmentId % 5 === 1 ? PRIMARY : 
+                                    dept.departmentId % 5 === 2 ? SECONDARY : 
+                                    dept.departmentId % 5 === 3 ? '#ff7043' : 
+                                    dept.departmentId % 5 === 4 ? '#ab47bc' : '#26a69a'} 
                             borderRadius="50%" 
                             mr={2} 
                           />
-                          {dept.name}
+                          {dept.departmentName} (Manager: {dept.managerFullName})
                         </Box>
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.department_id && (
-                    <Typography variant="caption" color="error">{errors.department_id}</Typography>
+                  {errors.departmentId && (
+                    <Typography variant="caption" color="error">{errors.departmentId}</Typography>
                   )}
                 </FormControl>
               </Grid>
@@ -417,22 +511,24 @@ const AddEmployeeForm = ({ open, onClose }) => {
       case 2:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.contract_type}>
-                <InputLabel>Contract Type *</InputLabel>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={!!errors.contractType}>
+                <InputLabel>Contract Type</InputLabel>
                 <Select
-                  name="contract_type"
-                  value={formData.contract_type}
+                  name="contractType"
+                  value={formData.contractType}
                   onChange={handleChange}
-                  label="Contract Type *"
+                  label="Contract Type"
                 >
-                  <MenuItem value="CDI">Permanent Contract (CDI)</MenuItem>
-                  <MenuItem value="CDD">Fixed-term Contract (CDD)</MenuItem>
-                  <MenuItem value="INTERIM">Temporary Work (Intérim)</MenuItem>
-                  <MenuItem value="FREELANCE">Freelance</MenuItem>
+                  <MenuItem value="CDI">CDI</MenuItem>
+                  <MenuItem value="CDD">CDD</MenuItem>
+                  <MenuItem value="Freelance">Freelance</MenuItem>
+                  <MenuItem value="Stage">Stage</MenuItem>
                 </Select>
-                {errors.contract_type && (
-                  <Typography variant="caption" color="error">{errors.contract_type}</Typography>
+                {errors.contractType && (
+                  <Typography color="error" variant="caption">
+                    {errors.contractType}
+                  </Typography>
                 )}
               </FormControl>
             </Grid>
@@ -441,11 +537,11 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Weekly Hours *"
-                name="work_hours"
-                value={formData.work_hours}
+                name="workHours"
+                value={formData.workHours}
                 onChange={handleChange}
-                error={!!errors.work_hours}
-                helperText={errors.work_hours}
+                error={!!errors.workHours}
+                helperText={errors.workHours}
               />
             </Grid>
             
@@ -469,16 +565,16 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formData.remote_available}
+                    checked={formData.remoteAvailable}
                     onChange={handleChange}
-                    name="remote_available"
+                    name="remoteAvailable"
                     color="primary"
                   />
                 }
                 label={
                   <Box display="flex" alignItems="center">
                     <Typography>Remote Work Available</Typography>
-                    {formData.remote_available && (
+                    {formData.remoteAvailable && (
                       <CheckCircleIcon fontSize="small" sx={{ color: SUCCESS, ml: 1 }} />
                     )}
                   </Box>
@@ -491,12 +587,12 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Contract Start Date *"
-                name="start_date"
+                name="contractStartDate"
                 type="date"
-                value={formData.start_date}
+                value={formData.contractStartDate}
                 onChange={handleChange}
-                error={!!errors.start_date}
-                helperText={errors.start_date}
+                error={!!errors.contractStartDate}
+                helperText={errors.contractStartDate}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -505,13 +601,13 @@ const AddEmployeeForm = ({ open, onClose }) => {
               <TextField
                 fullWidth
                 label="Contract End Date"
-                name="end_date"
+                name="contractEndDate"
                 type="date"
-                value={formData.end_date}
+                value={formData.contractEndDate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
-                disabled={formData.contract_type === 'CDI'}
-                helperText={formData.contract_type === 'CDI' ? "Permanent contracts have no end date" : ""}
+                disabled={formData.contractType === 'CDI'}
+                helperText={formData.contractType === 'CDI' ? "Permanent contracts have no end date" : ""}
               />
             </Grid>
             
@@ -600,6 +696,11 @@ const AddEmployeeForm = ({ open, onClose }) => {
           </Stepper>
 
           <StyledPaper>
+            {errors.fetch && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {errors.fetch}
+              </Alert>
+            )}
             {submitStatus === 'success' ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CheckCircleIcon sx={{ fontSize: 60, color: SUCCESS, mb: 2 }} />
@@ -607,7 +708,7 @@ const AddEmployeeForm = ({ open, onClose }) => {
                   Employee Added Successfully!
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  {formData.first_name} {formData.last_name} has been added to the system.
+                  {formData.firstName} {formData.lastName} has been added to the system.
                 </Typography>
               </Box>
             ) : submitStatus === 'error' ? (

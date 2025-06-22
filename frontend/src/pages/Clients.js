@@ -12,8 +12,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Fade,
-  Zoom,
   Avatar,
   Chip,
   Stack,
@@ -24,66 +22,64 @@ import {
   useMediaQuery,
   Collapse,
   ListItemIcon,
-  Backdrop,
   FormControlLabel,
   Button,
-  LinearProgress,
   TextField,
   MenuItem,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   Pagination,
   FormControl,
   InputLabel,
   Select,
   ToggleButton,
   ToggleButtonGroup,
-  DialogActions
+  DialogActions,
+  Alert,
+  LinearProgress,
+  CircularProgress,
 } from '@mui/material';
-
 import SearchIcon from '@mui/icons-material/Search';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InfoIcon from '@mui/icons-material/Info';
 import BusinessIcon from '@mui/icons-material/Business';
-import PersonIcon from '@mui/icons-material/Person';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import GroupIcon from '@mui/icons-material/Group';
-import WorkIcon from '@mui/icons-material/Work';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AddIcon from '@mui/icons-material/Add';
 import PhoneIcon from '@mui/icons-material/Phone';
+import AddIcon from '@mui/icons-material/Add';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import WorkIcon from '@mui/icons-material/Work';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import TimerIcon from '@mui/icons-material/Timer';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import StarIcon from '@mui/icons-material/Star';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ComposedChart, Scatter, ScatterChart, ZAxis
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
 } from 'recharts';
 import { styled } from '@mui/material/styles';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 const ACCENT = '#4F8DFD';
 const ACCENT2 = '#00C49F';
 const ACCENT3 = '#FFBB28';
 const ACCENT4 = '#FF8042';
-const ACCENT5 = '#8884D8';
-const ACCENT6 = '#82CA9D';
+const COLORS = [ACCENT, ACCENT2, ACCENT3, ACCENT4];
 
 const DashboardPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
-  display: 'flex',
-  flexDirection: 'column',
   height: '100%',
   backgroundColor: 'white',
   border: '1px solid #e0e0e0',
@@ -126,573 +122,444 @@ const InfoDialog = styled(Dialog)(({ theme }) => ({
 const Client = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const queryClient = useQueryClient();
+
+  // State variables
   const [selectedClients, setSelectedClients] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
   const [showInfo, setShowInfo] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState(null);
   const [clientsExpanded, setClientsExpanded] = useState(false);
-  const [typesExpanded, setTypesExpanded] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [sectorFilter, setSectorFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
   const [viewDensity, setViewDensity] = useState('comfortable');
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [currentPage, setCurrentPage] = useState(1);
-  const [jumpToPage, setJumpToPage] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [sortBy, setSortBy] = useState('clientName');
+  const [sortOrder, setSortOrder] = useState('asc');
 
-
-  // Mock data for clients with comprehensive information
-  const clients = [
-    {
-      id: 1,
-      name: 'TechCorp Solutions',
-      contactPerson: 'Jean Dupont',
-      email: 'jean.dupont@techcorp.com',
-      phone: '+33 1 23 45 67 89',
-      contractDate: '2020-03-15',
-      type: 'Entreprise',
-      sector: 'Technologie',
-      ticketsPerMonth: 12,
-      avgResolutionTime: 2.3, // days
-      projectsDelivered: 15,
-      avgProjectDuration: 45, // days
-      clientAge: 1460, // days since contract
-      ticketsOnTime: 85,
-      ticketsLate: 15,
-      projectsOnTime: 12,
-      projectsLate: 3,
-      satisfaction: 88,
-      avatar: 'TC',
-      status: 'Actif',
-      revenue: 450000,
-      currentProjects: ['ERP Migration', 'Mobile App'],
-      upcomingDeadlines: ['2024-02-15', '2024-03-10'],
-      priority: 'High',
-      tags: ['VIP', 'Tech', 'Long-term']
-    },
-    {
-      id: 2,
-      name: 'Green Energy Ltd',
-      contactPerson: 'Marie Martin',
-      email: 'marie.martin@greenenergy.com',
-      phone: '+33 1 98 76 54 32',
-      contractDate: '2021-07-22',
-      type: 'PME',
-      sector: 'Énergie',
-      ticketsPerMonth: 8,
-      avgResolutionTime: 1.8,
-      projectsDelivered: 8,
-      avgProjectDuration: 30,
-      clientAge: 950,
-      ticketsOnTime: 92,
-      ticketsLate: 8,
-      projectsOnTime: 7,
-      projectsLate: 1,
-      satisfaction: 92,
-      avatar: 'GE',
-      status: 'Actif',
-      revenue: 280000,
-      currentProjects: ['Solar Dashboard'],
-      upcomingDeadlines: ['2024-02-28'],
-      priority: 'Medium',
-      tags: ['Sustainable', 'Growing']
-    },
-    {
-      id: 3,
-      name: 'FinanceFirst Bank',
-      contactPerson: 'Pierre Leblanc',
-      email: 'p.leblanc@financefirst.com',
-      phone: '+33 1 11 22 33 44',
-      contractDate: '2019-11-10',
-      type: 'Grande Entreprise',
-      sector: 'Finance',
-      ticketsPerMonth: 25,
-      avgResolutionTime: 1.2,
-      projectsDelivered: 22,
-      avgProjectDuration: 60,
-      clientAge: 1600,
-      ticketsOnTime: 78,
-      ticketsLate: 22,
-      projectsOnTime: 18,
-      projectsLate: 4,
-      satisfaction: 85,
-      avatar: 'FF',
-      status: 'Actif',
-      revenue: 890000,
-      currentProjects: ['Security Audit', 'API Integration', 'Mobile Banking'],
-      upcomingDeadlines: ['2024-01-30', '2024-03-15', '2024-04-20'],
-      priority: 'High',
-      tags: ['VIP', 'Finance', 'Critical']
-    },
-    {
-      id: 4,
-      name: 'HealthCare Plus',
-      contactPerson: 'Dr. Sophie Bernard',
-      email: 'sophie.bernard@healthcareplus.com',
-      phone: '+33 1 55 66 77 88',
-      contractDate: '2022-01-15',
-      type: 'Startup',
-      sector: 'Santé',
-      ticketsPerMonth: 5,
-      avgResolutionTime: 3.1,
-      projectsDelivered: 4,
-      avgProjectDuration: 25,
-      clientAge: 745,
-      ticketsOnTime: 88,
-      ticketsLate: 12,
-      projectsOnTime: 3,
-      projectsLate: 1,
-      satisfaction: 90,
-      avatar: 'HP',
-      status: 'Actif',
-      revenue: 120000,
-      currentProjects: ['Patient Portal'],
-      upcomingDeadlines: ['2024-02-20'],
-      priority: 'Medium',
-      tags: ['Healthcare', 'Innovation']
-    },
-    {
-      id: 5,
-      name: 'RetailMaster Group',
-      contactPerson: 'Antoine Rousseau',
-      email: 'a.rousseau@retailmaster.com',
-      phone: '+33 1 33 44 55 66',
-      contractDate: '2018-06-01',
-      type: 'Grande Entreprise',
-      sector: 'Commerce',
-      ticketsPerMonth: 18,
-      avgResolutionTime: 2.8,
-      projectsDelivered: 28,
-      avgProjectDuration: 35,
-      clientAge: 2050,
-      ticketsOnTime: 82,
-      ticketsLate: 18,
-      projectsOnTime: 24,
-      projectsLate: 4,
-      satisfaction: 86,
-      avatar: 'RM',
-      status: 'Actif',
-      revenue: 650000,
-      currentProjects: ['E-commerce Platform', 'Inventory System'],
-      upcomingDeadlines: ['2024-02-10', '2024-03-05'],
-      priority: 'High',
-      tags: ['Retail', 'E-commerce', 'Long-term']
-    },
-    {
-      id: 6,
-      name: 'EduTech Academy',
-      contactPerson: 'Clara Moreau',
-      email: 'clara.moreau@edutech.com',
-      phone: '+33 1 77 88 99 00',
-      contractDate: '2023-03-20',
-      type: 'PME',
-      sector: 'Éducation',
-      ticketsPerMonth: 6,
-      avgResolutionTime: 2.0,
-      projectsDelivered: 3,
-      avgProjectDuration: 20,
-      clientAge: 315,
-      ticketsOnTime: 95,
-      ticketsLate: 5,
-      projectsOnTime: 3,
-      projectsLate: 0,
-      satisfaction: 94,
-      avatar: 'EA',
-      status: 'Nouveau',
-      revenue: 95000,
-      currentProjects: ['LMS Platform'],
-      upcomingDeadlines: ['2024-02-25'],
-      priority: 'Medium',
-      tags: ['Education', 'New']
-    }
-  ];
-
-  const clientTypes = [
-    { name: 'Grande Entreprise', count: 2, avgRevenue: 770000 },
-    { name: 'PME', count: 2, avgRevenue: 187500 },
-    { name: 'Startup', count: 1, avgRevenue: 120000 },
-    { name: 'Entreprise', count: 1, avgRevenue: 450000 }
-  ];
-
-  // Filter clients based on selections
-  const filteredClients = useMemo(() => {
-    if (selectedTypes.length === 0 && selectedClients.length === 0) {
-      return clients;
-    }
-    
-    return clients.filter(client => {
-      const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(client.type);
-      const clientMatch = selectedClients.length === 0 || selectedClients.includes(client.id);
-      return typeMatch && clientMatch;
-    });
-  }, [selectedClients, selectedTypes]);
-
-  // Generate performance data over time
-  const performanceData = useMemo(() => {
-    const baseData = [
-      { month: 'Jan', satisfaction: 85, tickets: 68, resolutionTime: 2.5, revenue: 180000 },
-      { month: 'Fév', satisfaction: 87, tickets: 72, resolutionTime: 2.3, revenue: 195000 },
-      { month: 'Mar', satisfaction: 89, tickets: 75, resolutionTime: 2.1, revenue: 210000 },
-      { month: 'Avr', satisfaction: 88, tickets: 78, resolutionTime: 2.0, revenue: 225000 },
-      { month: 'Mai', satisfaction: 90, tickets: 82, resolutionTime: 1.9, revenue: 240000 },
-      { month: 'Jun', satisfaction: 91, tickets: 85, resolutionTime: 1.8, revenue: 255000 }
-    ];
-
-    if (filteredClients.length === 0) return baseData;
-
-    const avgSatisfaction = filteredClients.reduce((sum, client) => sum + client.satisfaction, 0) / filteredClients.length;
-    const totalRevenue = filteredClients.reduce((sum, client) => sum + client.revenue, 0);
-    const multiplier = avgSatisfaction / 88;
-
-    return baseData.map(month => ({
-      ...month,
-      satisfaction: Math.round(month.satisfaction * multiplier),
-      revenue: Math.round(totalRevenue / 6)
-    }));
-  }, [filteredClients]);
-// Application des filtres de recherche, de priorité et de secteur
-const searchedClients = useMemo(() => {
-  return filteredClients.filter(client => {
-    const matchSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchPriority = priorityFilter ? client.priority === priorityFilter : true;
-    const matchSector = sectorFilter ? client.sector.toLowerCase().includes(sectorFilter.toLowerCase()) : true;
-    return matchSearch && matchPriority && matchSector;
+  // Fetch data from backend
+  const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => axios.get('http://localhost:8080/api/clients').then(res => res.data),
   });
-}, [filteredClients, searchTerm, priorityFilter, sectorFilter]);
 
-// Pagination
-const totalPages = Math.ceil(searchedClients.length / itemsPerPage);
-const paginatedClients = useMemo(() => {
-  const start = (currentPage - 1) * itemsPerPage;
-  return searchedClients.slice(start, start + itemsPerPage);
-}, [searchedClients, currentPage, itemsPerPage]);
+  const { data: departmentsData, isLoading: departmentsLoading } = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => axios.get('http://localhost:8080/api/departments').then(res => res.data),
+  });
 
-  // Ticket resolution analysis
-  const ticketAnalysis = useMemo(() => {
-    return filteredClients.map(client => ({
-      name: client.name.substring(0, 15) + '...',
-      onTime: client.ticketsOnTime,
-      late: client.ticketsLate,
-      satisfaction: client.satisfaction,
-      avgTime: client.avgResolutionTime
-    }));
-  }, [filteredClients]);
+  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => axios.get('http://localhost:8080/api/projects').then(res => res.data),
+  });
 
-  // Project delivery analysis
-  const projectAnalysis = useMemo(() => {
-    return [
-      { name: 'Projets À Temps', value: filteredClients.reduce((sum, c) => sum + c.projectsOnTime, 0), color: ACCENT2 },
-      { name: 'Projets En Retard', value: filteredClients.reduce((sum, c) => sum + c.projectsLate, 0), color: ACCENT4 }
-    ];
-  }, [filteredClients]);
+  const { data: ticketsData, isLoading: ticketsLoading } = useQuery({
+    queryKey: ['tickets'],
+    queryFn: () => axios.get('http://localhost:8080/api/tickets').then(res => res.data),
+  });
 
-  // Sector distribution
-  const sectorData = useMemo(() => {
-    const sectors = {};
-    filteredClients.forEach(client => {
-      sectors[client.sector] = (sectors[client.sector] || 0) + 1;
+  const clients = clientsData || [];
+  const departments = departmentsData || [];
+  const projects = projectsData || [];
+  const tickets = ticketsData || [];
+
+  // Mutation for adding a client
+  const addClientMutation = useMutation({
+    mutationFn: newClient => axios.post('http://localhost:8080/api/clients', newClient),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['clients']);
+      setShowAddForm(false);
+    },
+  });
+
+  // Filter and sort clients
+  const filteredClients = useMemo(() => {
+    let result = clients.filter(client => {
+      const matchesSearch =
+        client.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDepartment = departmentFilter
+        ? client.projects?.some(proj => proj.departmentId === parseInt(departmentFilter))
+        : true;
+      const matchesSelection = selectedClients.length === 0 || selectedClients.includes(client.clientId);
+      return matchesSearch && matchesDepartment && matchesSelection;
     });
-    
-    return Object.entries(sectors).map(([sector, count]) => ({
-      name: sector,
-      value: count
-    }));
-  }, [filteredClients]);
 
-  // Client performance radar
-  const clientRadarData = useMemo(() => {
-    if (filteredClients.length === 0) return [];
-    
-    const avgMetrics = filteredClients.reduce((acc, client) => {
-      acc.satisfaction += client.satisfaction;
-      acc.onTimeDelivery += (client.projectsOnTime / (client.projectsOnTime + client.projectsLate)) * 100;
-      acc.ticketResolution += (client.ticketsOnTime / (client.ticketsOnTime + client.ticketsLate)) * 100;
-      acc.projectEfficiency += Math.max(0, 100 - (client.avgProjectDuration - 20)); // Normalized
-      acc.responseTime += Math.max(0, 100 - (client.avgResolutionTime * 20)); // Normalized
-      return acc;
-    }, { satisfaction: 0, onTimeDelivery: 0, ticketResolution: 0, projectEfficiency: 0, responseTime: 0 });
+    result.sort((a, b) => {
+      let aValue, bValue;
+      switch (sortBy) {
+        case 'projects':
+          aValue = a.projects?.length || 0;
+          bValue = b.projects?.length || 0;
+          break;
+        default:
+          aValue = a.clientName?.toLowerCase() || '';
+          bValue = b.clientName?.toLowerCase() || '';
+      }
+      const order = sortOrder === 'asc' ? 1 : -1;
+      return aValue > bValue ? order : aValue < bValue ? -order : 0;
+    });
 
-    const count = filteredClients.length;
-    return [
-      { subject: 'Satisfaction', A: Math.round(avgMetrics.satisfaction / count), fullMark: 100 },
-      { subject: 'Livraison À Temps', A: Math.round(avgMetrics.onTimeDelivery / count), fullMark: 100 },
-      { subject: 'Résolution Tickets', A: Math.round(avgMetrics.ticketResolution / count), fullMark: 100 },
-      { subject: 'Efficacité Projets', A: Math.round(avgMetrics.projectEfficiency / count), fullMark: 100 },
-      { subject: 'Temps de Réponse', A: Math.round(avgMetrics.responseTime / count), fullMark: 100 },
-    ];
-  }, [filteredClients]);
+    return result;
+  }, [clients, searchTerm, departmentFilter, selectedClients, sortBy, sortOrder]);
 
-  const COLORS = [ACCENT, ACCENT2, ACCENT3, ACCENT4, ACCENT5, ACCENT6];
+  // Pagination
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredClients.slice(start, start + itemsPerPage);
+  }, [filteredClients, currentPage, itemsPerPage]);
+
+  // Chart Data
+  const projectsPerClientData = useMemo(() => {
+    const projectCounts = {};
+    filteredClients.forEach(client => {
+      const clientProjects = projects.filter(p => p.clientId === client.clientId);
+      projectCounts[client.clientName || 'Unknown'] = clientProjects.length;
+    });
+    return Object.entries(projectCounts)
+      .map(([name, projects]) => ({ name, projects }))
+      .filter(client => client.projects > 0)
+      .sort((a, b) => b.projects - a.projects)
+      .slice(0, 10);
+  }, [filteredClients, projects]);
+
+  const ticketVolumeData = useMemo(() => {
+    const ticketCounts = {};
+    filteredClients.forEach(client => {
+      const clientTickets = tickets.filter(t => t.clientId === client.clientId);
+      ticketCounts[client.clientName || 'Unknown'] = clientTickets.length;
+    });
+    return Object.entries(ticketCounts)
+      .map(([name, tickets]) => ({ name, value: tickets }))
+      .filter(client => client.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [filteredClients, tickets]);
+
+  const projectTimelineData = useMemo(() => {
+    const timeline = {};
+    const now = new Date();
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - 11 + i);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    });
+
+    months.forEach(month => {
+      timeline[month] = { month, activeProjects: 0 };
+    });
+
+    projects.forEach(project => {
+      const startDate = new Date(project.startDate);
+      const endDate = project.endDate ? new Date(project.endDate) : new Date();
+      const startMonth = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+      const endMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`;
+
+      months.forEach(month => {
+        if (month >= startMonth && month <= endMonth) {
+          const client = filteredClients.find(c => c.clientId === project.clientId);
+          if (client) {
+            timeline[month].activeProjects += 1;
+          }
+        }
+      });
+    });
+
+    return Object.values(timeline);
+  }, [projects, filteredClients]);
 
   // Add Client Form Component
   const AddClientForm = ({ open, onClose }) => {
-    const [activeStep, setActiveStep] = useState(0);
     const [clientData, setClientData] = useState({
-      name: '',
+      clientName: '',
       contactPerson: '',
       email: '',
       phone: '',
-      type: '',
-      sector: '',
-      priority: 'Medium',
-      projects: [],
-      expectedDeadline: ''
+      contractDate: '',
     });
+    const [errors, setErrors] = useState({});
 
-    const steps = [
-      'Informations Générales',
-      'Détails Business',
-      'Projets & Échéances'
-    ];
-
-    const handleNext = () => setActiveStep(prev => prev + 1);
-    const handleBack = () => setActiveStep(prev => prev - 1);
-    const handleReset = () => {
-      setActiveStep(0);
-      setClientData({
-        name: '',
-        contactPerson: '',
-        email: '',
-        phone: '',
-        type: '',
-        sector: '',
-        priority: 'Medium',
-        projects: [],
-        expectedDeadline: ''
-      });
+    const validate = () => {
+      const newErrors = {};
+      if (!clientData.clientName) newErrors.clientName = 'Required';
+      if (!clientData.email || !/\S+@\S+\.\S+/.test(clientData.email))
+        newErrors.email = 'Invalid email';
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = () => {
-      console.log('Nouveau client:', clientData);
-      onClose();
-      handleReset();
+      if (validate()) {
+        addClientMutation.mutate(clientData);
+        setClientData({
+          clientName: '',
+          contactPerson: '',
+          email: '',
+          phone: '',
+          contractDate: '',
+        });
+      }
     };
 
     return (
-      <InfoDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ 
-          background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
-          color: 'white',
-          m: -2,
-          mb: 2,
-          borderRadius: '20px 20px 0 0'
-        }}>
+      <InfoDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ backgroundColor: ACCENT, color: 'white', borderRadius: '20px 20px 0 0', m: -2, mb: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Ajouter un Nouveau Client
-            </Typography>
+            <Typography variant="h6">Add New Client</Typography>
             <IconButton onClick={onClose} sx={{ color: 'white' }}>
               <CloseIcon />
             </IconButton>
           </Stack>
         </DialogTitle>
-
         <DialogContent sx={{ p: 3 }}>
-          <Stepper activeStep={activeStep} orientation="vertical">
-            <Step>
-              <StepLabel>Informations Générales</StepLabel>
-              <StepContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Nom de l'entreprise"
-                      value={clientData.name}
-                      onChange={(e) => setClientData({...clientData, name: e.target.value})}
-                      sx={{ mb: 2 }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Personne de contact"
-                      value={clientData.contactPerson}
-                      onChange={(e) => setClientData({...clientData, contactPerson: e.target.value})}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      type="email"
-                      value={clientData.email}
-                      onChange={(e) => setClientData({...clientData, email: e.target.value})}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Téléphone"
-                      value={clientData.phone}
-                      onChange={(e) => setClientData({...clientData, phone: e.target.value})}
-                    />
-                  </Grid>
-                </Grid>
-                <Box sx={{ mt: 2 }}>
-                  <Button onClick={handleNext} variant="contained">
-                    Suivant
-                  </Button>
-                </Box>
-              </StepContent>
-            </Step>
-
-            <Step>
-              <StepLabel>Détails Business</StepLabel>
-              <StepContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      select
-                      label="Type d'entreprise"
-                      value={clientData.type}
-                      onChange={(e) => setClientData({...clientData, type: e.target.value})}
-                    >
-                      <MenuItem value="Startup">Startup</MenuItem>
-                      <MenuItem value="PME">PME</MenuItem>
-                      <MenuItem value="Entreprise">Entreprise</MenuItem>
-                      <MenuItem value="Grande Entreprise">Grande Entreprise</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      select
-                      label="Secteur d'activité"
-                      value={clientData.sector}
-                      onChange={(e) => setClientData({...clientData, sector: e.target.value})}
-                    >
-                      <MenuItem value="Technologie">Technologie</MenuItem>
-                      <MenuItem value="Finance">Finance</MenuItem>
-                      <MenuItem value="Santé">Santé</MenuItem>
-                      <MenuItem value="Éducation">Éducation</MenuItem>
-                      <MenuItem value="Commerce">Commerce</MenuItem>
-                      <MenuItem value="Énergie">Énergie</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      select
-                      label="Priorité"
-                      value={clientData.priority}
-                      onChange={(e) => setClientData({...clientData, priority: e.target.value})}
-                    >
-                      <MenuItem value="Low">Basse</MenuItem>
-                      <MenuItem value="Medium">Moyenne</MenuItem>
-                      <MenuItem value="High">Haute</MenuItem>
-                    </TextField>
-                  </Grid>
-                </Grid>
-                <Box sx={{ mt: 2 }}>
-                  <Button onClick={handleBack} sx={{ mr: 1 }}>
-                    Retour
-                  </Button>
-                  <Button onClick={handleNext} variant="contained">
-                    Suivant
-                  </Button>
-                </Box>
-              </StepContent>
-            </Step>
-
-            <Step>
-              <StepLabel>Projets & Échéances</StepLabel>
-              <StepContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Projets initiaux (séparés par des virgules)"
-                      multiline
-                      rows={3}
-                      value={clientData.projects.join(', ')}
-                      onChange={(e) => setClientData({...clientData, projects: e.target.value.split(', ')})}
-                      placeholder="Ex: Site web, Application mobile, Système de gestion"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Date limite prévue"
-                      type="date"
-                      value={clientData.expectedDeadline}
-                      onChange={(e) => setClientData({...clientData, expectedDeadline: e.target.value})}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                </Grid>
-                <Box sx={{ mt: 2 }}>
-                  <Button onClick={handleBack} sx={{ mr: 1 }}>
-                    Retour
-                  </Button>
-                  <Button onClick={handleSubmit} variant="contained" color="success">
-                    Créer le Client
-                  </Button>
-                </Box>
-              </StepContent>
-            </Step>
-          </Stepper>
+          {addClientMutation.isError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Error creating client: {addClientMutation.error.message}
+            </Alert>
+          )}
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Company Name"
+                value={clientData.clientName}
+                onChange={e => setClientData({ ...clientData, clientName: e.target.value })}
+                error={!!errors.clientName}
+                helperText={errors.clientName}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Contact Person"
+                value={clientData.contactPerson}
+                onChange={e => setClientData({ ...clientData, contactPerson: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={clientData.email}
+                onChange={e => setClientData({ ...clientData, email: e.target.value })}
+                error={!!errors.email}
+                helperText={errors.email}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Phone"
+                value={clientData.phone}
+                onChange={e => setClientData({ ...clientData, phone: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Contract Date"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                value={clientData.contractDate}
+                onChange={e => setClientData({ ...clientData, contractDate: e.target.value })}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={addClientMutation.isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={addClientMutation.isLoading}
+          >
+            {addClientMutation.isLoading ? <CircularProgress size={24} /> : 'Create'}
+          </Button>
+        </DialogActions>
       </InfoDialog>
     );
   };
 
-  const handleInfoClick = (item, type) => {
-    setSelectedInfo({ item, type });
-    setShowInfo(true);
-  };
+  // Client Info Dialog Component (Updated)
+  const ClientInfoDialog = ({ open, onClose, client }) => {
+    if (!client) return null;
 
-  const handleClientSelect = (clientId) => {
-    setSelectedClients(prev => 
-      prev.includes(clientId) 
-        ? prev.filter(id => id !== clientId)
-        : [...prev, clientId]
+    const clientProjects = projects.filter(p => p.clientId === client.clientId);
+    const clientTickets = tickets.filter(t => t.clientId === client.clientId);
+    console.log('Client Projects:', clientProjects); // Debug: Check all projects for this client
+    console.log('Client Tickets:', clientTickets); // Debug: Check all tickets for this client
+
+    const completedProjects = clientProjects.filter(p => {
+      console.log(`Project Status: ${p.status}`); // Debug: Log each project's status
+      return p.status?.toUpperCase() === 'COMPLETED'; // Case-insensitive match
+    }).length;
+    const openTickets = clientTickets.filter(t => {
+      console.log(`Ticket Status: ${t.status}`); // Debug: Log each ticket's status
+      return t.status?.toUpperCase() === 'OPEN'; // Case-insensitive match
+    }).length;
+
+    const completionRate =
+      clientProjects.length > 0
+        ? ((completedProjects / clientProjects.length) * 100).toFixed(1)
+        : 0;
+
+    return (
+      <InfoDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ backgroundColor: ACCENT, color: 'white', borderRadius: '20px 20px 0 0', m: -2, mb: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">{client.clientName || 'N/A'}</Typography>
+            <IconButton onClick={onClose} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <InfoCard>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
+                    General Information
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <BusinessIcon color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Company</Typography>
+                        <Typography variant="body1">{client.clientName || 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <EmailIcon color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Email</Typography>
+                        <Typography variant="body1">{client.email || 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <PhoneIcon color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Phone</Typography>
+                        <Typography variant="body1">{client.phone || 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <LocationOnIcon color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Contract Date</Typography>
+                        <Typography variant="body1">{client.contractDate || 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </InfoCard>
+            </Grid>
+            <Grid item xs={12}>
+              <InfoCard>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
+                    Quick KPIs
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Total Projects</Typography>
+                      <Typography variant="h6" sx={{ color: ACCENT2 }}>{clientProjects.length}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Completed Projects</Typography>
+                      <Typography variant="h6" sx={{ color: ACCENT3 }}>{completedProjects}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Open Tickets</Typography>
+                      <Typography variant="h6" sx={{ color: ACCENT4 }}>{openTickets}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Completion Rate</Typography>
+                      <Typography variant="h6" sx={{ color: ACCENT }}>
+                        {completionRate}%
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </InfoCard>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </InfoDialog>
     );
   };
 
-  const handleTypeSelect = (typeName) => {
-    setSelectedTypes(prev =>
-      prev.includes(typeName)
-        ? prev.filter(name => name !== typeName)
-        : [...prev, typeName]
+  const handleInfoClick = client => {
+    setSelectedInfo(client);
+    setShowInfo(true);
+  };
+
+  const handleClientSelect = clientId => {
+    setSelectedClients(prev =>
+      prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId],
     );
   };
 
   const clearFilters = () => {
     setSelectedClients([]);
-    setSelectedTypes([]);
+    setSearchTerm('');
+    setDepartmentFilter('');
+    setSortBy('clientName');
+    setSortOrder('asc');
   };
 
-  return (
-    <Box sx={{ 
-      p: { xs: 2, md: 3 }, 
-      background: 'linear-gradient(120deg, #fafdff 70%, #e3f0ff 100%)', 
-      minHeight: '100vh' 
-    }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography 
-          variant={isMobile ? "h5" : "h4"} 
-          sx={{ 
-            fontWeight: 800, 
-            color: ACCENT, 
-            textShadow: '0 2px 4px rgba(79,141,253,0.1)'
-          }}
+  if (clientsLoading || departmentsLoading || projectsLoading || ticketsLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (clientsError) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography>Error loading clients: {clientsError.message}</Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Please check your connection or try again.
+          </Typography>
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => queryClient.invalidateQueries(['clients'])}
+          startIcon={<GroupIcon />}
+          sx={{ mt: 2 }}
         >
-          Espace Client
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: { xs: 2, md: 3 }, background: 'linear-gradient(120deg, #fafdff 70%, #e3f0ff 100%)', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 800, color: ACCENT }}>
+          Clients Dashboard
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setShowAddForm(true)}
-          sx={{
-            background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
-            '&:hover': {
-              background: `linear-gradient(135deg, ${ACCENT} 20%, ${ACCENT2} 120%)`,
-            },
-          }}
+          sx={{ background: ACCENT, '&:hover': { background: ACCENT2 } }}
         >
-          Ajouter un client
+          Add Client
         </Button>
       </Box>
 
@@ -700,67 +567,50 @@ const paginatedClients = useMemo(() => {
       <FilterCard>
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
           <FilterListIcon sx={{ color: ACCENT }} />
-          <Typography variant="h6" sx={{ color: ACCENT, fontWeight: 600 }}>
-            Filtres
-          </Typography>
-          {(selectedClients.length > 0 || selectedTypes.length > 0) && (
-            <Button 
-              variant="outlined" 
-              size="small" 
-              onClick={clearFilters}
-              sx={{ ml: 'auto' }}
-            >
-              Effacer les filtres
+          <Typography variant="h6" sx={{ color: ACCENT, fontWeight: 600 }}>Filters</Typography>
+          {(selectedClients.length > 0 || searchTerm || departmentFilter) && (
+            <Button variant="outlined" size="small" onClick={clearFilters} sx={{ ml: 'auto' }}>
+              Clear Filters
             </Button>
           )}
         </Stack>
-        
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-              <ListItem 
-                button 
-                onClick={() => setClientsExpanded(!clientsExpanded)}
-                sx={{ bgcolor: 'rgba(79,141,253,0.05)' }}
-              >
-                <ListItemIcon>
-                  <BusinessIcon sx={{ color: ACCENT }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Clients" 
-                  secondary={`${selectedClients.length} sélectionné(s)`}
-                />
+              <ListItem button onClick={() => setClientsExpanded(!clientsExpanded)} sx={{ bgcolor: 'rgba(79,141,253,0.05)' }}>
+                <ListItemIcon><BusinessIcon sx={{ color: ACCENT }} /></ListItemIcon>
+                <ListItemText primary="Clients" secondary={`${selectedClients.length} selected`} />
                 {clientsExpanded ? <ExpandLess /> : <ExpandMore />}
               </ListItem>
               <Collapse in={clientsExpanded} timeout="auto" unmountOnExit>
                 <List sx={{ maxHeight: 200, overflow: 'auto' }}>
-                  {clients.map((client) => (
-                    <ListItem key={client.id} dense>
+                  {clients.map(client => (
+                    <ListItem key={client.clientId} dense>
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={selectedClients.includes(client.id)}
-                            onChange={() => handleClientSelect(client.id)}
+                            checked={selectedClients.includes(client.clientId)}
+                            onChange={() => handleClientSelect(client.clientId)}
                             sx={{ color: ACCENT }}
                           />
                         }
                         label={
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Avatar sx={{ bgcolor: ACCENT, width: 24, height: 24, fontSize: '0.75rem' }}>
-                              {client.avatar}
+                              {client.clientName?.[0] || '?'}
                             </Avatar>
                             <Box>
-                              <Typography variant="body2">{client.name}</Typography>
+                              <Typography variant="body2">{client.clientName || 'N/A'}</Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {client.type} - {client.sector}
+                                {client.contactPerson || 'N/A'}
                               </Typography>
                             </Box>
                           </Stack>
                         }
                       />
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleInfoClick(client, 'client')}
+                      <IconButton
+                        size="small"
+                        onClick={() => handleInfoClick(client)}
                         sx={{ ml: 'auto' }}
                       >
                         <InfoIcon fontSize="small" sx={{ color: ACCENT }} />
@@ -771,50 +621,22 @@ const paginatedClients = useMemo(() => {
               </Collapse>
             </Paper>
           </Grid>
-
           <Grid item xs={12} md={6}>
-            <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-              <ListItem 
-                button 
-                onClick={() => setTypesExpanded(!typesExpanded)}
-                sx={{ bgcolor: 'rgba(79,141,253,0.05)' }}
+            <FormControl fullWidth>
+              <InputLabel>Department</InputLabel>
+              <Select
+                value={departmentFilter}
+                label="Department"
+                onChange={e => setDepartmentFilter(e.target.value)}
               >
-                <ListItemIcon>
-                  <WorkIcon sx={{ color: ACCENT }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Types d'entreprise" 
-                  secondary={`${selectedTypes.length} sélectionné(s)`}
-                />
-                {typesExpanded ? <ExpandLess /> : <ExpandMore />}
-              </ListItem>
-              <Collapse in={typesExpanded}
-              timeout="auto" unmountOnExit>
-                <List sx={{ maxHeight: 200, overflow: 'auto' }}>
-                  {clientTypes.map((type) => (
-                    <ListItem key={type.name} dense>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={selectedTypes.includes(type.name)}
-                            onChange={() => handleTypeSelect(type.name)}
-                            sx={{ color: ACCENT }}
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2">{type.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {type.count} clients - €{type.avgRevenue.toLocaleString()} moyen
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Collapse>
-            </Paper>
+                <MenuItem value="">All</MenuItem>
+                {departments.map(dept => (
+                  <MenuItem key={dept.departmentId} value={dept.departmentId}>
+                    {dept.departmentName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
       </FilterCard>
@@ -838,58 +660,55 @@ const paginatedClients = useMemo(() => {
             </CardContent>
           </InfoCard>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <InfoCard>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
                   <Typography color="text.secondary" gutterBottom>
-                    Revenus Totaux
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: ACCENT2, fontWeight: 'bold' }}>
-                    €{filteredClients.reduce((sum, c) => sum + c.revenue, 0).toLocaleString()}
-                  </Typography>
-                </Box>
-                <TrendingUpIcon sx={{ fontSize: 40, color: ACCENT2, opacity: 0.7 }} />
-              </Stack>
-            </CardContent>
-          </InfoCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <InfoCard>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Satisfaction Moyenne
+                    Active Projects
                   </Typography>
                   <Typography variant="h4" sx={{ color: ACCENT3, fontWeight: 'bold' }}>
-                    {filteredClients.length > 0 
-                      ? Math.round(filteredClients.reduce((sum, c) => sum + c.satisfaction, 0) / filteredClients.length)
-                      : 0}%
+                    {projects.filter(p => !p.endDate || new Date(p.endDate) >= new Date()).length}
                   </Typography>
                 </Box>
-                <StarIcon sx={{ fontSize: 40, color: ACCENT3, opacity: 0.7 }} />
+                <WorkIcon sx={{ fontSize: 40, color: ACCENT3, opacity: 0.7 }} />
               </Stack>
             </CardContent>
           </InfoCard>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <InfoCard>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
                   <Typography color="text.secondary" gutterBottom>
-                    Projets Actifs
+                    Open Tickets
                   </Typography>
                   <Typography variant="h4" sx={{ color: ACCENT4, fontWeight: 'bold' }}>
-                    {filteredClients.reduce((sum, c) => sum + c.currentProjects.length, 0)}
+                    {tickets.filter(t => t.status === 'OPEN').length}
                   </Typography>
                 </Box>
                 <AssignmentIcon sx={{ fontSize: 40, color: ACCENT4, opacity: 0.7 }} />
+              </Stack>
+            </CardContent>
+          </InfoCard>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <InfoCard>
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography color="text.secondary" gutterBottom>
+                    Average Projects per Client
+                  </Typography>
+                  <Typography variant="h4" sx={{ color: ACCENT2, fontWeight: 'bold' }}>
+                    {filteredClients.length > 0
+                      ? (projects.length / filteredClients.length).toFixed(1)
+                      : 0}
+                  </Typography>
+                </Box>
+                <WorkIcon sx={{ fontSize: 40, color: ACCENT2, opacity: 0.7 }} />
               </Stack>
             </CardContent>
           </InfoCard>
@@ -898,112 +717,69 @@ const paginatedClients = useMemo(() => {
 
       {/* Charts Section */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} md={6}>
           <DashboardPaper>
             <Typography variant="h6" sx={{ mb: 2, color: ACCENT, fontWeight: 600 }}>
-              Performance dans le Temps
+              Number of Projects per Client (Top 10)
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#888" />
-                <YAxis stroke="#888" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: `1px solid ${ACCENT}`, 
-                    borderRadius: 8 
-                  }} 
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="satisfaction" 
-                  stroke={ACCENT} 
-                  strokeWidth={3}
-                  dot={{ fill: ACCENT, strokeWidth: 2, r: 4 }}
-                  name="Satisfaction (%)"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="tickets" 
-                  stroke={ACCENT2} 
-                  strokeWidth={3}
-                  dot={{ fill: ACCENT2, strokeWidth: 2, r: 4 }}
-                  name="Tickets Résolus"
-                />
-              </LineChart>
+              <BarChart data={projectsPerClientData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
+                <YAxis />
+                <Tooltip formatter={(value) => `${value} projects`} />
+                <Bar dataKey="projects" fill={ACCENT2} name="Projects" />
+              </BarChart>
+              {projectsPerClientData.length === 0 && (
+                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#666">
+                  No data available
+                </text>
+              )}
             </ResponsiveContainer>
           </DashboardPaper>
         </Grid>
-
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} md={6}>
           <DashboardPaper>
             <Typography variant="h6" sx={{ mb: 2, color: ACCENT, fontWeight: 600 }}>
-              Répartition par Secteur
+              Client Ticket Volume (Top 8)
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={sectorData}
+                  data={ticketVolumeData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
                   dataKey="value"
                 >
-                  {sectorData.map((entry, index) => (
+                  {ticketVolumeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => `${value} tickets`} />
+                {ticketVolumeData.length === 0 && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#666">
+                    No data available
+                  </text>
+                )}
               </PieChart>
             </ResponsiveContainer>
           </DashboardPaper>
         </Grid>
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12}>
           <DashboardPaper>
             <Typography variant="h6" sx={{ mb: 2, color: ACCENT, fontWeight: 600 }}>
-              Analyse des Tickets
+              Active Projects Timeline
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ticketAnalysis}>
+              <LineChart data={projectTimelineData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" stroke="#888" />
-                <YAxis stroke="#888" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="onTime" stackId="a" fill={ACCENT2} name="À Temps" />
-                <Bar dataKey="late" stackId="a" fill={ACCENT4} name="En Retard" />
-              </BarChart>
-            </ResponsiveContainer>
-          </DashboardPaper>
-        </Grid>
-
-        <Grid item xs={12} lg={6}>
-          <DashboardPaper>
-            <Typography variant="h6" sx={{ mb: 2, color: ACCENT, fontWeight: 600 }}>
-              Performance Globale
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={clientRadarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="subject" />
-                <PolarRadiusAxis />
-                <Radar
-                  name="Performance"
-                  dataKey="A"
-                  stroke={ACCENT}
-                  fill={ACCENT}
-                  fillOpacity={0.3}
-                />
-                <Tooltip />
-              </RadarChart>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => `${value} active projects`} />
+                <Line type="monotone" dataKey="activeProjects" stroke={ACCENT3} name="Active Projects" />
+              </LineChart>
             </ResponsiveContainer>
           </DashboardPaper>
         </Grid>
@@ -1011,81 +787,69 @@ const paginatedClients = useMemo(() => {
 
       {/* Client List */}
       <DashboardPaper>
-        {/* Header with Controls */}
-        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2} sx={{ mb: 3 }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'stretch', md: 'center' }}
+          spacing={2}
+          sx={{ mb: 3 }}
+        >
           <Typography variant="h6" sx={{ color: ACCENT, fontWeight: 600 }}>
-            Liste des Clients ({filteredClients.length})
+            Client List ({filteredClients.length})
           </Typography>
-          
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            {/* Search Bar */}
             <TextField
               size="small"
-              placeholder="Rechercher un client..."
+              placeholder="Search clients..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
-                sx: { minWidth: 250 }
+                sx: { minWidth: 250 },
               }}
             />
-            
-            {/* Priority Filter */}
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Priorité</InputLabel>
+              <InputLabel>Sort By</InputLabel>
               <Select
-                value={priorityFilter}
-                label="Priorité"
-                onChange={(e) => setPriorityFilter(e.target.value)}
+                value={sortBy}
+                label="Sort By"
+                onChange={e => setSortBy(e.target.value)}
               >
-                <MenuItem value="">Toutes</MenuItem>
-                <MenuItem value="High">Haute</MenuItem>
-                <MenuItem value="Medium">Moyenne</MenuItem>
-                <MenuItem value="Low">Basse</MenuItem>
+                <MenuItem value="clientName">Name</MenuItem>
+                <MenuItem value="projects">Number of Projects</MenuItem>
               </Select>
             </FormControl>
-            
-            {/* Sector Filter */}
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Secteur</InputLabel>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <InputLabel>Order</InputLabel>
               <Select
-                value={sectorFilter}
-                label="Secteur"
-                onChange={(e) => setSectorFilter(e.target.value)}
+                value={sortOrder}
+                label="Order"
+                onChange={e => setSortOrder(e.target.value)}
               >
-                <MenuItem value="">Tous</MenuItem>
-                <MenuItem value="E-commerce">E-commerce</MenuItem>
-                <MenuItem value="Santé">Santé</MenuItem>
-                <MenuItem value="Finance">Finance</MenuItem>
-                <MenuItem value="Education">Education</MenuItem>
-                <MenuItem value="Immobilier">Immobilier</MenuItem>
+                <MenuItem value="asc">Ascending</MenuItem>
+                <MenuItem value="desc">Descending</MenuItem>
               </Select>
             </FormControl>
-
-            {/* View Density Toggle */}
             <ToggleButtonGroup
               value={viewDensity}
               exclusive
               onChange={(e, newDensity) => newDensity && setViewDensity(newDensity)}
               size="small"
             >
-              <ToggleButton value="compact" aria-label="vue compacte">
+              <ToggleButton value="compact" aria-label="compact view">
                 <ViewListIcon />
               </ToggleButton>
-              <ToggleButton value="comfortable" aria-label="vue confortable">
+              <ToggleButton value="comfortable" aria-label="comfortable view">
                 <ViewModuleIcon />
               </ToggleButton>
             </ToggleButtonGroup>
-
-            {/* Items per page selector */}
             <FormControl size="small" sx={{ minWidth: 80 }}>
               <Select
                 value={itemsPerPage}
-                onChange={(e) => {
+                onChange={e => {
                   setItemsPerPage(e.target.value);
                   setCurrentPage(1);
                 }}
-                displayEmpty
               >
                 <MenuItem value={6}>6</MenuItem>
                 <MenuItem value={12}>12</MenuItem>
@@ -1095,283 +859,230 @@ const paginatedClients = useMemo(() => {
           </Stack>
         </Stack>
 
-        {/* Results Summary */}
-        {(searchTerm || priorityFilter || sectorFilter) && (
+        {(searchTerm || departmentFilter || sortBy !== 'clientName' || sortOrder !== 'asc') && (
           <Box sx={{ mb: 2 }}>
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
               <Typography variant="body2" color="text.secondary">
-                Filtres actifs:
+                Active Filters:
               </Typography>
               {searchTerm && (
                 <Chip
-                  label={`Recherche: "${searchTerm}"`}
+                  label={`Search: "${searchTerm}"`}
                   size="small"
                   onDelete={() => setSearchTerm('')}
                   color="primary"
                   variant="outlined"
                 />
               )}
-              {priorityFilter && (
+              {departmentFilter && (
                 <Chip
-                  label={`Priorité: ${priorityFilter}`}
+                  label={`Department: ${
+                    departments.find(d => d.departmentId === parseInt(departmentFilter))?.departmentName || 'N/A'
+                  }`}
                   size="small"
-                  onDelete={() => setPriorityFilter('')}
+                  onDelete={() => setDepartmentFilter('')}
                   color="primary"
                   variant="outlined"
                 />
               )}
-              {sectorFilter && (
+              {(sortBy !== 'clientName' || sortOrder !== 'asc') && (
                 <Chip
-                  label={`Secteur: ${sectorFilter}`}
+                  label={`Sort by: ${sortBy === 'clientName' ? 'Name' : 'Projects'} (${
+                    sortOrder === 'asc' ? 'Asc' : 'Desc'
+                  })`}
                   size="small"
-                  onDelete={() => setSectorFilter('')}
+                  onDelete={() => {
+                    setSortBy('clientName');
+                    setSortOrder('asc');
+                  }}
                   color="primary"
                   variant="outlined"
                 />
               )}
-              <Button
-                size="small"
-                onClick={() => {
-                  setSearchTerm('');
-                  setPriorityFilter('');
-                  setSectorFilter('');
-                }}
-                sx={{ ml: 1 }}
-              >
-                Effacer tout
+              <Button size="small" onClick={clearFilters} sx={{ ml: 1 }}>
+                Clear All
               </Button>
             </Stack>
           </Box>
         )}
 
-        {/* No Results Message */}
         {paginatedClients.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <SearchOffIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              Aucun client trouvé
+              No Clients Found
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Essayez de modifier vos critères de recherche
+              Try adjusting your search or filter criteria
             </Typography>
           </Box>
         ) : (
           <>
-            {/* Client Grid */}
             <Grid container spacing={viewDensity === 'compact' ? 1 : 2}>
-              {paginatedClients.map((client) => (
-                <Grid 
-                  item 
-                  xs={12} 
-                  sm={viewDensity === 'compact' ? 12 : 6} 
-                  md={viewDensity === 'compact' ? 6 : 4} 
-                  lg={viewDensity === 'compact' ? 4 : 4}
-                  xl={viewDensity === 'compact' ? 3 : 4}
-                  key={client.id}
-                >
-                  <Card sx={{ 
-                    borderRadius: 3, 
-                    transition: 'all 0.3s',
-                    height: viewDensity === 'compact' ? 'auto' : '100%',
-                    '&:hover': { 
-                      transform: 'translateY(-4px)', 
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)' 
-                    },
-                    border: client.priority === 'High' ? `2px solid ${ACCENT4}` : '1px solid #e0e0e0'
-                  }}>
-                    <CardContent sx={{ p: viewDensity === 'compact' ? 2 : 3 }}>
-                      {viewDensity === 'compact' ? (
-                        // Compact View
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Avatar sx={{ 
-                            bgcolor: client.priority === 'High' ? ACCENT4 : ACCENT,
-                            fontWeight: 'bold',
-                            width: 40,
-                            height: 40
-                          }}>
-                            {client.avatar}
-                          </Avatar>
-                          
-                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                              <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.95rem' }} noWrap>
-                                  {client.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap>
-                                  {client.contactPerson} • {client.sector}
-                                </Typography>
-                              </Box>
-                              
-                              <Stack direction="row" alignItems="center" spacing={1}>
-                                <Chip 
-                                  label={`${client.satisfaction}%`}
-                                  size="small"
-                                  sx={{ 
-                                    bgcolor: client.satisfaction >= 90 ? `${ACCENT2}20` : 
-                                          client.satisfaction >= 80 ? `${ACCENT3}20` : `${ACCENT4}20`,
-                                    color: client.satisfaction >= 90 ? ACCENT2 : 
-                                        client.satisfaction >= 80 ? ACCENT3 : ACCENT4,
-                                    fontWeight: 600,
-                                    minWidth: 50
-                                  }}
-                                />
-                                <Typography variant="body2" sx={{ color: ACCENT2, fontWeight: 600, minWidth: 60 }}>
-                                  €{(client.revenue / 1000).toFixed(0)}k
-                                </Typography>
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleInfoClick(client, 'client')}
-                                >
-                                  <InfoIcon sx={{ color: ACCENT }} />
-                                </IconButton>
-                              </Stack>
-                            </Stack>
-                          </Box>
-                        </Stack>
-                      ) : (
-                        // Comfortable View (original design)
-                        <>
-                          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                              <Avatar sx={{ 
-                                bgcolor: client.priority === 'High' ? ACCENT4 : ACCENT,
-                                fontWeight: 'bold'
-                              }}>
-                                {client.avatar}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                                  {client.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {client.contactPerson}
-                                </Typography>
-                              </Box>
-                            </Stack>
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleInfoClick(client, 'client')}
+              {paginatedClients.map(client => {
+                const clientProjects = projects.filter(p => p.clientId === client.clientId);
+                const completionRate =
+                  clientProjects.length > 0
+                    ? ((clientProjects.filter(p => p.status === 'COMPLETED').length / clientProjects.length) * 100).toFixed(1)
+                    : 0;
+
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    sm={viewDensity === 'compact' ? 12 : 6}
+                    md={viewDensity === 'compact' ? 6 : 4}
+                    lg={viewDensity === 'compact' ? 4 : 3}
+                    key={client.clientId}
+                  >
+                    <Card
+                      sx={{
+                        borderRadius: 3,
+                        transition: 'all 0.3s',
+                        height: '100%',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                        },
+                        border: clientProjects.length > 5 ? `2px solid ${ACCENT4}` : '1px solid #e0e0e0',
+                      }}
+                    >
+                      <CardContent sx={{ p: viewDensity === 'compact' ? 2 : 3 }}>
+                        {viewDensity === 'compact' ? (
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            <Avatar
+                              sx={{
+                                bgcolor: clientProjects.length > 5 ? ACCENT4 : ACCENT,
+                                fontWeight: 'bold',
+                                width: 40,
+                                height: 40,
+                              }}
                             >
-                              <InfoIcon sx={{ color: ACCENT }} />
-                            </IconButton>
-                          </Stack>
-
-                          <Stack spacing={1} sx={{ mb: 2 }}>
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <BusinessIcon fontSize="small" color="action" />
-                              <Typography variant="body2">{client.type} - {client.sector}</Typography>
-                            </Stack>
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <EmailIcon fontSize="small" color="action" />
-                              <Typography variant="body2" noWrap>{client.email}</Typography>
-                            </Stack>
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <PhoneIcon fontSize="small" color="action" />
-                              <Typography variant="body2">{client.phone}</Typography>
-                            </Stack>
-                          </Stack>
-
-                          <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
-                            {client.tags.slice(0, 2).map((tag) => (
-                              <Chip 
-                                key={tag} 
-                                label={tag} 
-                                size="small" 
-                                sx={{ 
-                                  bgcolor: `${ACCENT}20`, 
-                                  color: ACCENT,
-                                  fontWeight: 500
-                                }} 
-                              />
-                            ))}
-                            {client.tags.length > 2 && (
-                              <Chip 
-                                label={`+${client.tags.length - 2}`}
-                                size="small"
-                                variant="outlined"
-                                sx={{ fontSize: '0.7rem' }}
-                              />
-                            )}
-                          </Stack>
-
-                          <Divider sx={{ my: 2 }} />
-
-                          <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                              <Typography variant="caption" color="text.secondary">
-                                Satisfaction
-                              </Typography>
-                              <LinearProgress 
-                                variant="determinate" 
-                                value={client.satisfaction} 
-                                sx={{ 
-                                  mt: 0.5, 
-                                  height: 8, 
-                                  borderRadius: 4,
-                                  backgroundColor: '#f0f0f0',
-                                  '& .MuiLinearProgress-bar': {
-                                    backgroundColor: client.satisfaction >= 90 ? ACCENT2 : 
-                                                  client.satisfaction >= 80 ? ACCENT3 : ACCENT4
-                                  }
-                                }} 
-                              />
-                              <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
-                                {client.satisfaction}%
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography variant="caption" color="text.secondary">
-                                Revenus
-                              </Typography>
-                              <Typography variant="h6" sx={{ color: ACCENT2, fontWeight: 600 }}>
-                                €{client.revenue.toLocaleString()}
-                              </Typography>
-                            </Grid>
-                          </Grid>
-
-                          {client.currentProjects.length > 0 && (
-                            <Box sx={{ mt: 2 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Projets en cours:
-                              </Typography>
-                              <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap">
-                                {client.currentProjects.slice(0, 2).map((project, idx) => (
-                                  <Chip 
-                                    key={idx} 
-                                    label={project} 
-                                    size="small" 
-                                    variant="outlined"
-                                    sx={{ fontSize: '0.7rem' }}
+                              {client.clientName?.[0] || '?'}
+                            </Avatar>
+                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                                  <Typography
+                                    variant="subtitle1"
+                                    sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                                    noWrap
+                                  >
+                                    {client.clientName || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" noWrap>
+                                    {client.contactPerson || 'N/A'}
+                                  </Typography>
+                                </Box>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Chip
+                                    label={`${clientProjects.length} projects`}
+                                    size="small"
+                                    sx={{ bgcolor: `${ACCENT2}20`, color: ACCENT2, fontWeight: 600 }}
                                   />
-                                ))}
-                                {client.currentProjects.length > 2 && (
-                                  <Chip 
-                                    label={`+${client.currentProjects.length - 2}`} 
-                                    size="small" 
-                                    variant="outlined"
-                                    sx={{ fontSize: '0.7rem' }}
-                                  />
-                                )}
+                                  <IconButton size="small" onClick={() => handleInfoClick(client)}>
+                                    <InfoIcon sx={{ color: ACCENT }} />
+                                  </IconButton>
+                                </Stack>
                               </Stack>
                             </Box>
-                          )}
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                          </Stack>
+                        ) : (
+                          <>
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="flex-start"
+                              sx={{ mb: 2 }}
+                            >
+                              <Stack direction="row" spacing={2} alignItems="center">
+                                <Avatar
+                                  sx={{
+                                    bgcolor: clientProjects.length > 5 ? ACCENT4 : ACCENT,
+                                    fontWeight: 'bold',
+                                  }}
+                                >
+                                  {client.clientName?.[0] || '?'}
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+                                    {client.clientName || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {client.contactPerson || 'N/A'}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              <IconButton size="small" onClick={() => handleInfoClick(client)}>
+                                <InfoIcon sx={{ color: ACCENT }} />
+                              </IconButton>
+                            </Stack>
+
+                            <Stack spacing={1} sx={{ mb: 2 }}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <EmailIcon fontSize="small" color="action" />
+                                <Typography variant="body2" noWrap>
+                                  {client.email || 'N/A'}
+                                </Typography>
+                              </Stack>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <PhoneIcon fontSize="small" color="action" />
+                                <Typography variant="body2">{client.phone || 'N/A'}</Typography>
+                              </Stack>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <LocationOnIcon fontSize="small" color="action" />
+                                <Typography variant="body2" noWrap>
+                                  {client.contractDate || 'N/A'}
+                                </Typography>
+                              </Stack>
+                            </Stack>
+
+                            <Divider sx={{ my: 2 }} />
+
+                            <Grid container spacing={2}>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Projects
+                                </Typography>
+                                <Typography variant="h6" sx={{ color: ACCENT3, fontWeight: 600 }}>
+                                  {clientProjects.length}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Completion Rate
+                                </Typography>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={parseFloat(completionRate)}
+                                  sx={{
+                                    mt: 0.5,
+                                    height: 8,
+                                    borderRadius: 4,
+                                    backgroundColor: '#f0f0f0',
+                                    '& .MuiLinearProgress-bar': { backgroundColor: ACCENT4 },
+                                  }}
+                                />
+                                <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
+                                  {completionRate}%
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4 }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Typography variant="body2" color="text.secondary">
-                    Page {currentPage} sur {totalPages} ({filteredClients.length} clients)
+                    Page {currentPage} of {totalPages} ({filteredClients.length} clients)
                   </Typography>
-                  
                   <Pagination
                     count={totalPages}
                     page={currentPage}
@@ -1394,37 +1105,6 @@ const paginatedClients = useMemo(() => {
                       },
                     }}
                   />
-
-                  {/* Quick Jump */}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      Aller à:
-                    </Typography>
-                    <TextField
-                      size="small"
-                      type="number"
-                      value={jumpToPage}
-                      onChange={(e) => setJumpToPage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          const page = parseInt(jumpToPage);
-                          if (page >= 1 && page <= totalPages) {
-                            setCurrentPage(page);
-                            setJumpToPage('');
-                          }
-                        }
-                      }}
-                      sx={{ 
-                        width: 80,
-                        '& input': { textAlign: 'center' }
-                      }}
-                      inputProps={{ 
-                        min: 1, 
-                        max: totalPages,
-                        placeholder: currentPage
-                      }}
-                    />
-                  </Stack>
                 </Stack>
               </Box>
             )}
@@ -1432,168 +1112,7 @@ const paginatedClients = useMemo(() => {
         )}
       </DashboardPaper>
 
-      {/* Info Dialog */}
-      <InfoDialog open={showInfo} onClose={() => setShowInfo(false)} maxWidth="md" fullWidth>
-        {selectedInfo && (
-          <>
-            <DialogTitle sx={{ 
-              background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
-              color: 'white',
-              m: -2,
-              mb: 2,
-              borderRadius: '20px 20px 0 0'
-            }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {selectedInfo.type === 'client' ? selectedInfo.item.name : selectedInfo.item.name}
-                </Typography>
-                <IconButton onClick={() => setShowInfo(false)} sx={{ color: 'white' }}>
-                  <CloseIcon />
-                </IconButton>
-              </Stack>
-            </DialogTitle>
-
-            <DialogContent sx={{ p: 3 }}>
-              {selectedInfo.type === 'client' && (
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <InfoCard sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
-                          Informations Générales
-                        </Typography>
-                        <Stack spacing={2}>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <PersonIcon color="action" />
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">Contact</Typography>
-                              <Typography variant="body1">{selectedInfo.item.contactPerson}</Typography>
-                            </Box>
-                          </Stack>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <EmailIcon color="action" />
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">Email</Typography>
-                              <Typography variant="body1">{selectedInfo.item.email}</Typography>
-                            </Box>
-                          </Stack>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <PhoneIcon color="action" />
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">Téléphone</Typography>
-                              <Typography variant="body1">{selectedInfo.item.phone}</Typography>
-                            </Box>
-                          </Stack>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <CalendarTodayIcon color="action" />
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">Date de contrat</Typography>
-                              <Typography variant="body1">{selectedInfo.item.contractDate}</Typography>
-                            </Box>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </InfoCard>
-
-                    <InfoCard>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
-                          Projets en Cours
-                        </Typography>
-                        <Stack spacing={1}>
-                          {selectedInfo.item.currentProjects.map((project, idx) => (
-                            <Chip 
-                              key={idx} 
-                              label={project} 
-                              sx={{ bgcolor: `${ACCENT}10`, color: ACCENT }}
-                            />
-                          ))}
-                        </Stack>
-                      </CardContent>
-                    </InfoCard>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <InfoCard sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
-                          Métriques de Performance
-                        </Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Box textAlign="center">
-                              <Typography variant="h4" sx={{ color: ACCENT2, fontWeight: 'bold' }}>
-                                {selectedInfo.item.satisfaction}%
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Satisfaction
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Box textAlign="center">
-                              <Typography variant="h4" sx={{ color: ACCENT3, fontWeight: 'bold' }}>
-                                {selectedInfo.item.avgResolutionTime}j
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Temps moyen
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Box textAlign="center">
-                              <Typography variant="h4" sx={{ color: ACCENT4, fontWeight: 'bold' }}>
-                                {selectedInfo.item.projectsDelivered}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Projets livrés
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Box textAlign="center">
-                              <Typography variant="h4" sx={{ color: ACCENT5, fontWeight: 'bold' }}>
-                                €{selectedInfo.item.revenue.toLocaleString()}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Chiffre d'affaires
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </InfoCard>
-
-                    <InfoCard>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, color: ACCENT }}>
-                          Échéances Importantes
-                        </Typography>
-                        <Stack spacing={1}>
-                          {selectedInfo.item.upcomingDeadlines.map((deadline, idx) => (
-                            <Stack key={idx} direction="row" alignItems="center" spacing={2}>
-                              <WarningIcon 
-                                sx={{ 
-                                  color: new Date(deadline) < new Date() ? ACCENT4 : ACCENT3 
-                                }} 
-                              />
-                              <Typography variant="body2">
-                                {new Date(deadline).toLocaleDateString('fr-FR')}
-                              </Typography>
-                            </Stack>
-                          ))}
-                        </Stack>
-                      </CardContent>
-                    </InfoCard>
-                  </Grid>
-                </Grid>
-              )}
-            </DialogContent>
-          </>
-        )}
-      </InfoDialog>
-
-      {/* Add Client Form */}
+      <ClientInfoDialog open={showInfo} onClose={() => setShowInfo(false)} client={selectedInfo} />
       <AddClientForm open={showAddForm} onClose={() => setShowAddForm(false)} />
     </Box>
   );
